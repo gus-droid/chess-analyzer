@@ -9,6 +9,7 @@ def load_game(file_path):
 
 def get_metadata(game):
     return {
+        "url": game.headers.get("Link"),
         "white": game.headers.get("White"),
         "black": game.headers.get("Black"),
         "result": game.headers.get("Result"),
