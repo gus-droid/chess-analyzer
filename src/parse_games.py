@@ -1,5 +1,13 @@
 import chess.pgn
+import io
+import chess.pgn
 MY_USERNAME = "ChessGoon23"
+
+def load_game_from_pgn(pgn_text):
+    pgn_file = io.StringIO(pgn_text)
+    game = chess.pgn.read_game(pgn_file)
+
+    return game
 
 def load_game(file_path):
     with open(file_path, "r") as pgn_file:
@@ -7,16 +15,60 @@ def load_game(file_path):
 
     return game
 
+def load_games(file_path):
+    games = []
+
+    with open(file_path, "r", encoding="utf-8") as pgn_file:
+        while True:
+            game = chess.pgn.read_game(pgn_file)
+
+            if game is None:
+                break
+
+            games.append(game)
+
+    return games
+
+MY_USERNAME = "ChessGoon23"
+
+
 def get_metadata(game):
+    white = game.headers.get("White")
+    black = game.headers.get("Black")
+
+    white_elo = game.headers.get("WhiteElo")
+    black_elo = game.headers.get("BlackElo")
+
+    if white and white.lower() == MY_USERNAME.lower():
+        my_color = "White"
+        my_rating = white_elo
+        opponent_rating = black_elo
+
+    elif black and black.lower() == MY_USERNAME.lower():
+        my_color = "Black"
+        my_rating = black_elo
+        opponent_rating = white_elo
+
+    else:
+        my_color = None
+        my_rating = None
+        opponent_rating = None
+
     return {
         "url": game.headers.get("Link"),
-        "white": game.headers.get("White"),
-        "black": game.headers.get("Black"),
+        "white": white,
+        "black": black,
         "result": game.headers.get("Result"),
         "date": game.headers.get("Date"),
-        "white_elo": game.headers.get("WhiteElo"),
-        "black_elo": game.headers.get("BlackElo"),
+        "white_elo": white_elo,
+        "black_elo": black_elo,
+        "my_color": my_color,
+        "my_rating": my_rating,
+        "opponent_rating": opponent_rating,
+        "eco": game.headers.get("ECO"),
+        "opening": game.headers.get("Opening"),
     }
+
 
 def get_moves(game):
     board = game.board()
@@ -59,11 +111,6 @@ def get_my_result(game):
     return None
 
 if __name__ == "__main__":
-    game = load_game("data/raw/soumyodeepdutta_vs_ChessGoon23_2026.10.22.pgn")
-    print(game)
-    metadata = get_metadata(game)
-    print(metadata)
-    print(get_moves(game))
-    print(get_my_color(game))
-    print("Color:", get_my_color(game))
-    print("Result:", get_my_result(game))
+    games = load_games("data/raw/latest_month.pgn")
+
+    print("Games loaded:", len(games))

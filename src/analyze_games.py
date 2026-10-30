@@ -5,11 +5,8 @@ import chess.engine
 ENGINE_PATH = "engines/stockfish-windows-x86-64-universal.exe"
 
 
-def analyze_game(file_path):
+def analyze_game(game):
     moves_data = []
-    with open(file_path, "r") as pgn_file:
-        game = chess.pgn.read_game(pgn_file)
-
     board = game.board()
     move_number = 0
 
@@ -41,6 +38,9 @@ def analyze_game(file_path):
         after_centipawn = after_score.score(mate_score=100000)
 
         centipawn_loss = max(0, before_centipawn - after_centipawn)
+
+        #Cap extreme mate-related losses
+        centipawn_loss = min(centipawn_loss, 1000)
         move_classification = classify_move(centipawn_loss)
 
         moves_data.append({

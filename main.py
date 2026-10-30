@@ -1,4 +1,5 @@
-from src.parse_games import load_game, get_metadata
+from src.fetch_games import get_archives, get_games
+from src.parse_games import load_game_from_pgn, get_metadata
 from src.analyze_games import analyze_game
 from src.database import (
     create_tables,
@@ -7,26 +8,65 @@ from src.database import (
     game_exists,
 )
 
-FILE_PATH = "data/raw/test_game.pgn"
+USERNAME = "ChessGoon23"
+
+"""
+Fetch Chess.com games from the last 6 months -> keep bullet, blitz, and rapid ->
+parse each PGN -> merge metadata -> skip duplicates -> analyze with Stockfish ->
+save game-level and move-level data to the database
+"""
 
 
 def main():
     create_tables()
 
-    game = load_game(FILE_PATH)
-    metadata = get_metadata(game)
+    archives = get_archives(USERNAME)
 
-    if game_exists(metadata["url"]):
-        print("Game already analyzed.")
-        return
+    # Only analyze the last 6 months
+    recent_archives = archives[-6:]
 
-    moves_data = analyze_game(FILE_PATH)
+    for archive in recent_archives:
+        print("\nProcessing archive:", archive)
 
-    game_id = insert_game(metadata)
-    insert_moves(game_id, moves_data)
+        api_games = get_games(archive)
 
-    print("Game saved successfully.")
-    print("Game ID:", game_id)
+        print("Games found:", len(api_games))
+
+        for api_game in api_games:
+
+            # Only analyze bullet, blitz, and rapid games
+            if api_game["time_class"] not in ["bullet", "blitz", "rapid"]:
+                continue
+
+            # Parse the PGN string into a chess.pgn.Game object
+            game = load_game_from_pgn(
+                api_game["pgn"]
+            )
+
+            metadata = get_metadata(game)
+
+            # Add metadata that comes from Chess.com API
+            metadata["time_class"] = api_game["time_class"]
+            metadata["time_control"] = api_game["time_control"]
+
+            # Skip games that have already been analyzed
+            if game_exists(metadata["url"]):
+                print(
+                    "Skipping already analyzed game:",
+                    metadata["url"]
+                )
+                continue
+
+            # Analyze all moves with Stockfish
+            moves_data = analyze_game(game)
+
+            # Save game-level metadata
+            game_id = insert_game(metadata)
+
+            # Save move-level Stockfish analysis
+            insert_moves(game_id, moves_data)
+
+            print("Saved game:", game_id, metadata["time_class"], metadata["url"])
 
 
 if __name__ == "__main__":

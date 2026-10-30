@@ -17,7 +17,14 @@ def create_tables():
             result TEXT,
             date TEXT,
             white_elo INTEGER,
-            black_elo INTEGER
+            black_elo INTEGER,
+            time_class TEXT,
+            time_control TEXT,
+            my_color TEXT,
+            my_rating INTEGER,
+            opponent_rating INTEGER,
+            eco TEXT,
+            opening TEXT
         )
     """)
 
@@ -52,9 +59,16 @@ def insert_game(metadata):
             result,
             date,
             white_elo,
-            black_elo
+            black_elo,
+            time_class,
+            time_control,
+            my_color,
+            my_rating,
+            opponent_rating,
+            eco,
+            opening
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         metadata["url"],
         metadata["white"],
@@ -63,6 +77,13 @@ def insert_game(metadata):
         metadata["date"],
         metadata["white_elo"],
         metadata["black_elo"],
+        metadata["time_class"],
+        metadata["time_control"],
+        metadata["my_color"],
+        metadata["my_rating"],
+        metadata["opponent_rating"],
+        metadata["eco"],
+        metadata["opening"],
     ))
 
     game_id = cursor.lastrowid
@@ -115,9 +136,11 @@ def game_exists(url):
     )
 
     result = cursor.fetchone()
+
     conn.close()
 
     return result is not None
+
 
 if __name__ == "__main__":
     create_tables()
